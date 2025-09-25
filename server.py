@@ -16,6 +16,9 @@ NACK = 2
 INFO = 3
 ERR = 4
 ACK = 5
+BUSY = 6
+
+ACTIVE_CLIENT = None
 
 # --- Formato do Header ---
 # ! = Ordenação big-endian para rede
@@ -95,9 +98,17 @@ def main():
       # Lida com o processo de retransmissão dos arquivos
       while True:
         try:
-          sock.settimeout(10.0) # Espera 10s para uma resposta
-          response, _ = sock.recvfrom(BUFFER_SIZE)
-          _, _, _, msg_type = unpack_header(response)
+          sock.settimeout(None)
+          response, sender_address = sock.recvfrom(BUFFER_SIZE)
+
+          if sender_address != client_address:
+            print(f"  -- Ignorando pacotes de fonte inesperada: {sender_address}")
+            continue
+          
+          try:
+            _, _, _, msg_type = unpack_header(response)
+          except struct.error:
+            print(f"  -- Ignorando pacote! --")
 
           if msg_type == NACK:
             # O cliente está requerindo retransmissões
@@ -123,9 +134,9 @@ def main():
         except socket.timeout:
           print(f"O cliente {client_address} expirou. Encerrando a conexão.")
           break
-    except Exception as e:
-      print(f"Ocorreu um erro: {e}")       
+    except socket.timeout:
+      continue    
 
 
 if __name__ == "__main__":
-    main()
+  main()
