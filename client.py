@@ -4,6 +4,7 @@ import hashlib
 import re
 
 BUFFER_SIZE = 2048
+NACK_BATCH_SIZE = 150
 
 # --- Tipos de mensagens de protocolo ---
 REQ = 0
@@ -136,11 +137,17 @@ def main():
       # Identifica os segmentos faltantes e envia um NACK
       missing_seqs = [str(i) for i, chunk in enumerate(received_chunks) if chunk is None]
       if missing_seqs:
-        print(f"Segmentos faltantes: {', '.join(missing_seqs)}")
-        nack_payload = ",".join(missing_seqs).encode()
-        nack_header = create_header(0, 0, b'\x00'*16, NACK)
-        sock.sendto(nack_header + nack_payload, server_address)
-        print("Nack enviado ao servidor para fazer a retransmissão.")
+        print(f"Número de segmentos faltantes: {len(missing_seqs)} Solicitando em lotes...")
+
+        for i in range(0, len(missing_seqs), NACK_BATCH_SIZE):
+          batch = missing_seqs[i:i + NACK_BATCH_SIZE]
+          nack_payload = ",".join(batch).encode()
+          nack_header = create_header(0, 0, b'\x00'*16, NACK)
+          
+          print(f"   -> Solicitando lote de {len(batch)} segmentos começando por {batch[0]}")
+          sock.sendto(nack_header + nack_payload, server_address)
+        
+        print("Todos os Nacks foram enviados para o servidor.")
     
     # Monta o arquivo
     full_data = b"".join(received_chunks)
@@ -150,7 +157,7 @@ def main():
       output_filename = f"received_{filename}"
       with open(output_filename, 'wb') as f:
         f.write(full_data)
-      print(f"🎉 File transfer successful! Saved as '{output_filename}'.")
+      print(f"Transferência do arquivo realizada com succeso! Salvo como '{output_filename}'.")
       
       # Envia o ACK final para o servidor
       ack_header = create_header(0, 0, b'\x00'*16, ACK)

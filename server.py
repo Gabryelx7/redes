@@ -23,10 +23,10 @@ ACK = 5
 # 16s = string de 16 bytes (para o MD5)
 # B = unsigned char (1 byte)
 HEADER_FORMAT = '!II16sB'
-HEADER_SIZE = struct.calcsize(HEADER_FORMAT)
+HEADER_SIZE = struct.calcsize(HEADER_FORMAT) # 25 Bytes
 
 def create_header(seq_num, total_segments, checksum, msg_type):
-  """Empacota os campos do header em um objeto bytes."""
+  """Empacota os campos do header em um objeto de bytes."""
   return struct.pack(HEADER_FORMAT, seq_num, total_segments, checksum, msg_type)
 
 def unpack_header(packet):
@@ -103,7 +103,7 @@ def main():
             # O cliente está requerindo retransmissões
             missing_seqs_str = response[HEADER_SIZE:].decode()
             missing_seqs = [int(s) for s in missing_seqs_str.split(',')]
-            print(f"NACK recebido para os segmentos: {missing_seqs}")
+            #print(f"NACK recebido para os segmentos: {missing_seqs}")
 
             for seq_num in missing_seqs:
               start = seq_num * PAYLOAD_SIZE
