@@ -91,6 +91,7 @@ def main():
                     if msg_type == ERR:
                         error_msg = info_packet[HEADER_SIZE:].decode()
                         print(f"Erro do servidor: {error_msg}")
+                        return
                     elif msg_type == BUSY:
                         print("Esperando liberar servidor...")
                         continue
@@ -107,7 +108,7 @@ def main():
 
             except socket.timeout:
                 print("Servidor não respondeu à tempo")
-                break
+                return
         else:
             continue
 
@@ -177,7 +178,7 @@ def main():
                 # Verifica se já fizemos o máximo de NACKS
                 if nack_attemps >= MAX_NACK_ATTEMPS:
                     print('Servidor não está respondendo. Abortando transferência')
-                    break
+                    return
 
                 print(
                     f"Número de segmentos faltantes: {len(missing_seqs)}. Solicitando em lotes...")
