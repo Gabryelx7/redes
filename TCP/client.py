@@ -3,9 +3,6 @@ import threading
 import protocol
 import os
 
-# Configurações do cliente
-HOST = "127.0.0.1"
-PORT = 12345
 DOWNLOAD_DIR = 'client_downloads'  # Pasta para salvar arquivos baixados
 
 #------------------------------------------------------------------------------
@@ -80,13 +77,14 @@ def main():
 
 
     # Solicita IP e porta do servidor ao usuário
+    # Default -> IP = localhost, Porta = 12345 
     ip = input("Enter Server IP (default localhost): ") or '127.0.0.1'
     port = input("Enter Server Port (default 12345): ") or '12345'
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as c:
         try:
             # Tenta conectar ao servidor
-            c.connect((HOST, PORT))
+            c.connect((ip, int(port)))
             print(f"Connected to {ip}:{port}")
         except Exception as e:
             print(f"Could not connect: {e}")
