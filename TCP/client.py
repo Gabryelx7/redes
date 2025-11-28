@@ -48,6 +48,9 @@ def listen_for_messages(sock, stop_event):
                     # Verifica integridade do arquivo baixado
                     print("[VERIFYING] Calculating SHA-256...")
                     local_hash = protocol.calculate_file_hash(save_path)
+
+                    print(f"Local Hash: {local_hash}")
+                    print(f"Received Hash: {server_hash}")
                     
                     if local_hash == server_hash:
                         print(f"[SUCCESS] File saved to {save_path}. Integrity Verified.")
