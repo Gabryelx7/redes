@@ -81,69 +81,69 @@ def main():
     ip = input("Enter Server IP (default localhost): ") or '127.0.0.1'
     port = input("Enter Server Port (default 12345): ") or '12345'
 
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as c:
+    c = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        # Tenta conectar ao servidor
+        c.connect((ip, int(port)))
+        print(f"Connected to {ip}:{port}")
+    except Exception as e:
+        print(f"Could not connect: {e}")
+        return
+    
+    stop_event = threading.Event()
+
+    # Inicia thread para escutar mensagens do servidor
+    listener = threading.Thread(target=listen_for_messages, args=(c, stop_event), daemon=True)
+    listener.start()
+
+    # Exibe comandos disponíveis ao usuário
+    print("\n--- COMMANDS ---")
+    print("1. Chat [message]")
+    print("2. File [filename]")
+    print("3. Exit")
+    print("----------------")
+
+    while not stop_event.is_set():
         try:
-            # Tenta conectar ao servidor
-            c.connect((ip, int(port)))
-            print(f"Connected to {ip}:{port}")
-        except Exception as e:
-            print(f"Could not connect: {e}")
-            return
-        
-        stop_event = threading.Event()
+            # Lê comando do usuário
+            user_input = input("Enter command: ")
+            parts = user_input.split(" ", 1)
+            cmd = parts[0].lower()
 
-        # Inicia thread para escutar mensagens do servidor
-        listener = threading.Thread(target=listen_for_messages, args=(c, stop_event), daemon=True)
-        listener.start()
-
-        # Exibe comandos disponíveis ao usuário
-        print("\n--- COMMANDS ---")
-        print("1. Chat [message]")
-        print("2. File [filename]")
-        print("3. Log Out")
-        print("----------------")
-
-        while not stop_event.is_set():
-            try:
-                # Lê comando do usuário
-                user_input = input("Enter command: ")
-                parts = user_input.split(" ", 1)
-                cmd = parts[0].lower()
-
-                # Comando para sair
-                if cmd == "log" or cmd == "logout" or cmd == "exit":
-                    protocol.send_json(c, {"type": "EXIT"})
-                    stop_event.set()
-                    break
-
-                # Comando de chat
-                elif cmd == "chat":
-                    if len(parts) < 2:
-                        print("Usage: Chat [message]")
-                        continue
-                    msg = parts[1]
-                    protocol.send_json(c, {"type": "CHAT", "message": msg})
-
-                # Comando para solicitar arquivo
-                elif cmd == "file":
-                    if len(parts) < 2:
-                        print("Usage: File [filename.ext]")
-                        continue
-                    filename = parts[1]
-                    protocol.send_json(c, {"type": "FILE_REQ", "filename": filename})
-
-                else:
-                    print("Unknown command.")
-
-            except KeyboardInterrupt:
+            # Comando para sair
+            if cmd == "exit":
                 protocol.send_json(c, {"type": "EXIT"})
-                break
-            except Exception as e:
-                print(f"Error sending data: {e}")
+                stop_event.set()
                 break
 
-        c.close()
-        print("Client application closed.")
+            # Comando de chat
+            elif cmd == "chat":
+                if len(parts) < 2:
+                    print("Usage: Chat [message]")
+                    continue
+                msg = parts[1]
+                protocol.send_json(c, {"type": "CHAT", "message": msg})
+
+            # Comando para solicitar arquivo
+            elif cmd == "file":
+                if len(parts) < 2:
+                    print("Usage: File [filename.ext]")
+                    continue
+                filename = parts[1]
+                protocol.send_json(c, {"type": "FILE_REQ", "filename": filename})
+
+            else:
+                print("Unknown command.")
+
+        except KeyboardInterrupt:
+            protocol.send_json(c, {"type": "EXIT"})
+            break
+        except Exception as e:
+            print(f"Error sending data: {e}")
+            break
+
+    c.close()
+    print("Client application closed.")
 
 #------------------------------------------------------------------------------
 

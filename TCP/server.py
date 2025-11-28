@@ -7,7 +7,6 @@ import os
 # Configurações do servidor
 HOST = "0.0.0.0"
 PORT = 12345       
-BUFFER_SIZE = 1024 
 FILES_DIR = "../server_files" # Pasta onde os arquivos ficam disponíveis para download
 
 
@@ -24,7 +23,6 @@ def handle_client(conn: socket.socket, addr):
 
     # Exibe conexão estabelecida
     print(f"[+] Connected: {addr}")
-
 
     # Adiciona cliente à lista protegida por lock
     with clients_lock:
@@ -119,26 +117,21 @@ def main():
         os.makedirs(FILES_DIR)
         print(f"Created directory '{FILES_DIR}'. Place files here to download.")
 
-    print(f"Starting server on {HOST}:{PORT} ... (Ctrl-C to stop)")
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        # Cria socket TCP e inicia escuta
-        # s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        s.bind((HOST, PORT))
-        s.listen()
-        print(f"[LISTENING] Server listening on {HOST}:{PORT}")
+    # Cria socket TCP e inicia escuta
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind((HOST, PORT))
+    s.listen()
+    print(f"[LISTENING] Server listening on {HOST}:{PORT}")
 
-        # Inicia thread do console do servidor
-        threading.Thread(target=server_console_thread, daemon=True).start()
-        try:
-            while True:
-                # Aceita novas conexões de clientes
-                conn, addr = s.accept()
-                thread = threading.Thread(target=handle_client, args=(conn, addr), daemon=True)
-                thread.start()
-                print(f"[ACTIVE CONNECTIONS] {threading.active_count() - 2}")
-        except KeyboardInterrupt:
-            print("\nServer shutting down...")
-            return
+    # Inicia thread do console do servidor
+    threading.Thread(target=server_console_thread, daemon=True).start()
+    
+    while True:
+        # Aceita novas conexões de clientes
+        conn, addr = s.accept()
+        thread = threading.Thread(target=handle_client, args=(conn, addr))
+        thread.start()
+        print(f"[ACTIVE CONNECTIONS] {threading.active_count() - 2}")
 
 #------------------------------------------------------------------------------
 
